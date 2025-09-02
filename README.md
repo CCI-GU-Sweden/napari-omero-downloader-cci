@@ -15,15 +15,29 @@ A plugin that allows napari to connect to the Omero CCI server to visualize and 
 
 This [napari] plugin was generated with [copier] using the [napari-plugin-template] (None).
 
-<!--
-Don't miss the full getting started guide to set up your new package:
-https://github.com/napari/napari-plugin-template#getting-started
-
-and review the napari docs for plugin developers:
-https://napari.org/stable/plugins/index.html
--->
-
 ## Installation
+
+### First napari installation
+
+First install miniconda from conda forge: [https://conda-forge.org/download/].
+
+Recommanded, create an environment for napari, bundling both napari and omero
+
+```
+conda create -n napari -c conda-forge napari omero-py pyqt pyside2 --yes
+conda activate napari
+napari
+```
+
+### Already python installed napari
+
+In this case, activate your environment and install Omero:
+
+```
+conda install -c conda-forge omero-py --yes
+```
+
+### Plugin installation
 
 You can install `napari-omero-downloader-cci` via [pip]:
 
@@ -31,20 +45,17 @@ You can install `napari-omero-downloader-cci` via [pip]:
 pip install napari-omero-downloader-cci
 ```
 
-If napari is not already installed, you can install `napari-omero-downloader-cci` with napari and Qt via:
-
-```
-pip install "napari-omero-downloader-cci[all]"
-```
-
-
 To install latest development version :
 
 ```
 pip install git+https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci.git
 ```
 
+—or, during development—
 
+```
+pip install -e .
+```
 
 ## Contributing
 

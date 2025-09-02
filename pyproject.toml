@@ -17,27 +17,21 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+	"Programming Language :: Python :: 3.9",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
-requires-python = ">=3.10"
-# napari can be included in dependencies if napari imports are required.
-# However, you should not include napari[all], napari[qt],
-# or any other Qt bindings directly (e.g. PyQt5, PySide2).
-# See best practices: https://napari.org/stable/plugins/building_a_plugin/best_practices.html
+requires-python = ">=3.9"
+
 dependencies = [
     "numpy",
     "magicgui",
     "qtpy",
     "scikit-image",
+	"dask",
+	"omero-py",
 ]
 
 [project.optional-dependencies]
-# Allow easily installation with the full, default napari installation
-# (including Qt backend) using napari-omero-downloader-cci[all].
 all = ["napari[all]"]
 
 [dependency-groups]
@@ -77,7 +71,7 @@ fallback_version = "0.0.1+nogit"
 
 [tool.black]
 line-length = 79
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py39', 'py310', 'py311', 'py312', 'py313']
 
 [tool.ruff]
 line-length = 79
