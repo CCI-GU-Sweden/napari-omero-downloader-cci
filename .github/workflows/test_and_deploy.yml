@@ -52,11 +52,18 @@ jobs:
       # setup-miniconda: https://github.com/conda-incubator/setup-miniconda
       # and
       # tox-conda: https://github.com/tox-dev/tox-conda
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+          auto-update-conda: true
+      - name: Preinstall OMERO and Ice
+        run: |
+          conda install --yes omero-py zeroc-ice
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install setuptools tox tox-gh-actions
-          python -m pip install -e .[testing]
       # this runs the platform-specific tests declared in tox.ini
       - name: Test with tox
         run: python -m tox
