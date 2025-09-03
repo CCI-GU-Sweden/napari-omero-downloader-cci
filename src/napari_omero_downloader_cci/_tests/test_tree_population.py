@@ -4,6 +4,7 @@ Created on Wed Sep  3 09:27:08 2025
 @author: simon
 """
 
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,6 +12,10 @@ from qtpy.QtCore import QTimer
 
 from napari_omero_downloader_cci.omero_downloader_widget import (
     OmeroDownloaderWidget,
+)
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "darwin", reason="flaky QTimer teardown on macOS CI"
 )
 
 

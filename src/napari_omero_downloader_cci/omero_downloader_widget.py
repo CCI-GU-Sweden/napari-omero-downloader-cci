@@ -9,7 +9,6 @@ Created on Mon Sep  1 14:54:11 2025
 import dask.array as da
 import napari
 import numpy as np
-import omero
 from dask import delayed
 from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QBrush, QColor, QPixmap
@@ -27,7 +26,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from . import omero_connection
 from .gui import (
     DownloadManager,
     DownloadProgressDialog,
@@ -173,6 +171,9 @@ class OmeroDownloaderWidget(QWidget):
 
     def connect_to_omero(self):
         import Ice
+        import omero
+
+        from . import omero_connection
 
         key = self.key_edit.text().strip()
 
@@ -413,6 +414,7 @@ class OmeroDownloaderWidget(QWidget):
     def _on_group_changed(self, index):
         """Handle group selection changes"""
         import Ice
+        import omero
 
         group_name = self.group_combo.itemText(index)
         try:

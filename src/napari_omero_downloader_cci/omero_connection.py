@@ -6,12 +6,12 @@ Created on Thu May 15 15:29:18 2025
 """
 
 import numpy as np
-from omero.gateway import BlitzGateway
 
 
 class OmeroConnection:
 
     def __init__(self, hostname, port, token):
+
         self._connect_to_omero(hostname, port, token)
 
     def __del__(self):
@@ -24,6 +24,8 @@ class OmeroConnection:
         return self.conn
 
     def _connect_to_omero(self, hostname, port, token):
+        from omero.gateway import BlitzGateway
+
         self.omero_token = token
 
         self.conn = BlitzGateway(host=hostname, port=port)
@@ -205,8 +207,4 @@ class OmeroConnection:
 
 
 if __name__ == "__main__":
-    Conn = OmeroConnection(
-        "omero-cci-cli.gu.se", "4064", "7f0ce8f1-2543-4d27-b94b-62e4f71daf4b"
-    )
-
-    t = Conn.get_all_user()
+    pass
