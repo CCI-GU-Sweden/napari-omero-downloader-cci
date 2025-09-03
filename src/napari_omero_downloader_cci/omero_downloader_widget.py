@@ -7,7 +7,6 @@ Created on Mon Sep  1 14:54:11 2025
 # omero_downloader_widget.py
 
 import dask.array as da
-import Ice
 import napari
 import numpy as np
 import omero
@@ -173,6 +172,8 @@ class OmeroDownloaderWidget(QWidget):
             self.disconnect_from_omero()
 
     def connect_to_omero(self):
+        import Ice
+
         key = self.key_edit.text().strip()
 
         if not key:
@@ -411,6 +412,8 @@ class OmeroDownloaderWidget(QWidget):
 
     def _on_group_changed(self, index):
         """Handle group selection changes"""
+        import Ice
+
         group_name = self.group_combo.itemText(index)
         try:
             self.conn.setOmeroGroupName(group_name)
