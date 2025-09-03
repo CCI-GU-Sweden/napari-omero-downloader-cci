@@ -57,6 +57,22 @@ pip install git+https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci.git
 pip install -e .
 ```
 
+## Running the plugin after Installation
+
+You will need to open the conda-forge preogram, then:
+
+```
+conda activate napari
+napari
+```
+
+The plug will be in the plugin tab.
+
+## Warning about standalone napari
+
+A standalone version of napari is available, and the plugin will be available on the napari hub. However, installation through the standalone app is not recommanded, since it relies on pip which does not distribute system ready dependancy for Ice.
+
+
 ## Contributing
 
 Contributions are very welcome. Tests can be run with [tox], please ensure
