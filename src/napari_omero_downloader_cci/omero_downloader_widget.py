@@ -10,8 +10,8 @@ import dask.array as da
 import Ice
 import napari
 import numpy as np
+import omero
 from dask import delayed
-from omero import ApiUsageException
 from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QBrush, QColor, QPixmap
 from qtpy.QtWidgets import (
@@ -196,7 +196,7 @@ class OmeroDownloaderWidget(QWidget):
 
             # Fill explorer tree
             self.populate_full_tree()
-        except (Ice.Exception, ApiUsageException) as e:
+        except (Ice.Exception, omero.ApiUsageException) as e:
             QMessageBox.critical(self, "Connection Error", str(e))
             self.connected = False
 
@@ -429,7 +429,7 @@ class OmeroDownloaderWidget(QWidget):
             self.omero_tree.clear()
             self.download_tree.clear()
             self.populate_full_tree()
-        except (Ice.Exception, ApiUsageException, ValueError) as e:
+        except (Ice.Exception, omero.ApiUsageException, ValueError) as e:
             QMessageBox.critical(
                 self, "Error", f"Failed to switch groups: {str(e)}"
             )
