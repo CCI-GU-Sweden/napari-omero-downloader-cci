@@ -65,7 +65,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "tox<4" "tox-conda>=0.10,<0.11" "tox-gh-actions<3"
       # this runs the platform-specific tests declared in tox.ini
-      - name: Test with tox
+      - name: Test with tox (Linux under Xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX +render -noreset" tox
+        env:
+          PLATFORM: ${{ matrix.platform }}
+
+      - name: Test with tox (non-Linux)
+        if: runner.os != 'Linux'
         run: python -m tox
         env:
           PLATFORM: ${{ matrix.platform }}
