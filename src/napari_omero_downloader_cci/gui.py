@@ -6,7 +6,7 @@ Created on Thu May 15 15:06:43 2025
 
 from pathlib import Path
 
-from qtpy.QtCore import Qt, pyqtSignal
+from qtpy.QtCore import Qt, Signal
 from qtpy.QtWidgets import (
     QDialog,
     QProgressBar,
@@ -17,7 +17,7 @@ from qtpy.QtWidgets import (
 
 
 class OmeroExplorerTree(QTreeWidget):
-    itemDoubleClickedToTransfer = pyqtSignal(QTreeWidgetItem)  # Custom signal
+    itemDoubleClickedToTransfer = Signal(QTreeWidgetItem)  # Custom signal
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -30,7 +30,7 @@ class OmeroExplorerTree(QTreeWidget):
 
 
 class DownloadQueueTree(QTreeWidget):
-    itemDoubleClickedToTransfer = pyqtSignal(QTreeWidgetItem)  # Custom signal
+    itemDoubleClickedToTransfer = Signal(QTreeWidgetItem)  # Custom signal
 
     def __init__(self, parent=None, conn=None):
         super().__init__(parent)
