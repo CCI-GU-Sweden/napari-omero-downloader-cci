@@ -171,7 +171,6 @@ class OmeroDownloaderWidget(QWidget):
 
     def connect_to_omero(self):
         import Ice
-        import omero
 
         from . import omero_connection
 
@@ -194,13 +193,14 @@ class OmeroDownloaderWidget(QWidget):
             self.download_btn.setEnabled(True)
             # QMessageBox.information(self, "Connected", "Successfully connected to OMERO.")
             self.update_status_icon()
+            # self.user_name = self.conn.get_logged_in_user_name()
             self._update_groups_and_user()
+            self.refresh()
 
-            # Fill explorer tree
-            self.populate_full_tree()
-        except (Ice.Exception, omero.ApiUsageException) as e:
+        except Ice.Exception as e:
             QMessageBox.critical(self, "Connection Error", str(e))
             self.connected = False
+            self.update_status_icon()
 
     def disconnect_from_omero(self):
         if self.conn:
@@ -213,19 +213,32 @@ class OmeroDownloaderWidget(QWidget):
         self.update_status_icon()
         self.omero_tree.clear()
         self.download_tree.clear()
+        self.download_tree._existing_projects = {}
         QMessageBox.information(
             self, "Disconnected", "Disconnected from OMERO."
         )
 
     def check_connection(self):
-        if (
-            not self.busy and self.connected and self.conn is not None
-        ):  # check simple status
+        import Ice
+
+        try:
+            if (
+                not self.conn.is_connected()
+                and not self.busy
+                and not self.connected
+            ):
+                self.connected = False
+                self.update_status_icon()
+                QMessageBox.critical(
+                    self, "Error", "Lost the connection to the Omero server."
+                )
+        except Ice.Exception as e:
+            QMessageBox.critical(self, "Connection Error", str(e))
             self.connected = False
             self.update_status_icon()
-            QMessageBox.critical(
-                self, "Error", "Lost the connection to the Omero server."
-            )
+        except AttributeError:  # in case that self.conn is None
+            self.connected = False
+            self.update_status_icon()
 
     def update_status_icon(self):
         if self.connected and not self.busy:
@@ -243,6 +256,7 @@ class OmeroDownloaderWidget(QWidget):
             pixmap.fill(Qt.red)
             self.status_icon.setPixmap(pixmap)
             self.status_icon.setToolTip("Disconnected")
+            self.login_btn.setText("Connect")
 
     # === Populate tree ===
     def populate_full_tree(self):
@@ -328,61 +342,66 @@ class OmeroDownloaderWidget(QWidget):
         except StopIteration:
             self.progress_dialog.close()
             self.download_tree.clear()
+            self.download_tree._existing_projects = {}
             self.update_omero_tree_highlight()
             self.busy = False
             self.update_status_icon()
 
     # === Tree highlighting ===
     def update_omero_tree_highlight(self):
+        # 1) gather all ids currently present in download_tree
+        present = self._collect_download_ids()
+
+        # 2) recurse the OMERO tree using the set
         for i in range(self.omero_tree.topLevelItemCount()):
             proj_item = self.omero_tree.topLevelItem(i)
-            self._update_item_highlight_recursive(proj_item)
+            self._update_item_highlight_recursive(proj_item, present)
 
-    def _update_item_highlight_recursive(self, item):
+    def _collect_download_ids(self):
+        """Return a set of all (type, id) pairs in the download tree."""
+        seen = set()
+
+        def gather(node):
+            data = node.data(0, 1)
+            if isinstance(data, tuple) and len(data) == 2:
+                # normalize to strings to avoid int/str mismatches
+                d_type, d_id = data
+                seen.add((str(d_type), str(d_id)))
+            for i in range(node.childCount()):
+                gather(node.child(i))
+
+        for i in range(self.download_tree.topLevelItemCount()):
+            gather(self.download_tree.topLevelItem(i))
+        return seen
+
+    def _update_item_highlight_recursive(self, item, present):
+        # leaf
         if item.childCount() == 0:
-            included = self._is_in_download_tree(item)
-            if included:
-                item.setBackground(0, FULL_SELECTION)
+            o_type, o_id = item.data(0, 1) or (None, None)
+            included = (str(o_type), str(o_id)) in present
+            item.setBackground(0, FULL_SELECTION if included else QBrush())
+            return _Tri.FULL if included else _Tri.NONE
+
+        # internal: aggregate child states
+        saw_full = saw_none = saw_partial = False
+        for i in range(item.childCount()):
+            st = self._update_item_highlight_recursive(item.child(i), present)
+            if st == _Tri.FULL:
+                saw_full = True
+            elif st == _Tri.PARTIAL:
+                saw_partial = True
             else:
-                item.setBackground(0, QBrush())
-            return included
+                saw_none = True
 
-        total = item.childCount()
-        included_count = 0
-        for i in range(total):
-            child = item.child(i)
-            if self._update_item_highlight_recursive(child):
-                included_count += 1
-
-        if included_count == total:
-            item.setBackground(0, FULL_SELECTION)
-            return True
-        elif included_count > 0:
+        if saw_partial or (saw_full and saw_none):
             item.setBackground(0, PARTIAL_SELECTION)
-            return False
+            return _Tri.PARTIAL
+        elif saw_full and not saw_none:
+            item.setBackground(0, FULL_SELECTION)
+            return _Tri.FULL
         else:
             item.setBackground(0, QBrush())
-            return False
-
-    def _is_in_download_tree(self, omero_item):
-        o_type, o_id = omero_item.data(0, 1)
-        for i in range(self.download_tree.topLevelItemCount()):
-            d_proj = self.download_tree.topLevelItem(i)
-            if self._tree_item_match(d_proj, o_type, o_id):
-                return True
-            for j in range(d_proj.childCount()):
-                d_ds = d_proj.child(j)
-                if self._tree_item_match(d_ds, o_type, o_id):
-                    return True
-                for k in range(d_ds.childCount()):
-                    d_child = d_ds.child(k)
-                    if self._tree_item_match(d_child, o_type, o_id):
-                        return True
-        return False
-
-    def _tree_item_match(self, item, o_type, o_id):
-        d_type, d_id = item.data(0, 1)
-        return d_type == o_type and d_id == o_id
+            return _Tri.NONE
 
     # === Omero group and user/experimenter selection ===
     def _update_groups_and_user(self):
@@ -414,7 +433,6 @@ class OmeroDownloaderWidget(QWidget):
     def _on_group_changed(self, index):
         """Handle group selection changes"""
         import Ice
-        import omero
 
         group_name = self.group_combo.itemText(index)
         try:
@@ -433,8 +451,11 @@ class OmeroDownloaderWidget(QWidget):
 
             self.omero_tree.clear()
             self.download_tree.clear()
+            self.download_tree._existing_projects = {}
             self.populate_full_tree()
-        except (Ice.Exception, omero.ApiUsageException, ValueError) as e:
+        except (Ice.Exception, ValueError) as e:
+            self.connected = False
+            self.update_status_icon()
             QMessageBox.critical(
                 self, "Error", f"Failed to switch groups: {str(e)}"
             )
@@ -449,6 +470,7 @@ class OmeroDownloaderWidget(QWidget):
     def _on_experimentor_changed(self, index):
         self.omero_tree.clear()
         self.download_tree.clear()
+        self.download_tree._existing_projects = {}
         user_name = self.user_combo.itemText(index)
         if user_name == "":
             user_name = self.user_name
@@ -550,6 +572,12 @@ class OmeroDaskLoader:
             arrays.append(da.concatenate(z_list, axis=1))
         full = da.concatenate(arrays, axis=0)
         return full
+
+
+class _Tri:
+    NONE = 0
+    PARTIAL = 1
+    FULL = 2
 
 
 # === Register in Napari ===

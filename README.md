@@ -24,7 +24,7 @@ First install miniconda from conda forge: [https://conda-forge.org/download/].
 Recommanded, create an environment for napari, bundling both napari and omero
 
 ```
-conda create -n napari -c conda-forge napari omero-py pyqt pyside2 --yes
+conda create -n napari -c conda-forge napari omero-py pyqt --yes
 conda activate napari
 napari
 ```
@@ -59,7 +59,7 @@ pip install -e .
 
 ## Running the plugin after Installation
 
-You will need to open the conda-forge preogram, then:
+You will need to open the conda-forge program, then:
 
 ```
 conda activate napari

@@ -5,7 +5,7 @@ Created on Thu May 15 15:29:18 2025
 
 """
 
-import numpy as np
+import omero
 
 
 class OmeroConnection:
@@ -89,15 +89,23 @@ class OmeroConnection:
 
         return images
 
+    def get_annotations_from_imageID(self, image_id: int) -> dict:
+        image_obj = self.conn.getObject("Image", image_id)
+        annotations = {}
+        if image_obj:
+            for ann in image_obj.listAnnotations():
+                if isinstance(ann, omero.gateway.MapAnnotationWrapper):
+                    annotations.update(dict(ann.getValue()))
+        return annotations
+
     def get_original_upload_folder(self, image_id):
         try:
-            folder = dict(
-                self.conn.getObject("Image", image_id)
-                .getAnnotation()
-                .getValue()
-            ).get("Folder", "uploads")
-        except (AttributeError, KeyError):
-            folder = "uploads"  # fallback
+            annotations = self.get_annotations_from_imageID(image_id)
+            if len(annotations) == 0:
+                return "uploads"
+            return annotations.get("Folder", "uploads")
+        except (AttributeError, KeyError, ValueError):
+            folder = "uploads"  # fallback, but should NOT trigger
         return folder
 
     def get_fileset_from_imageID(self, image_id):
@@ -130,41 +138,6 @@ class OmeroConnection:
             if "@" in name:
                 usernames.append(name)
         return usernames
-
-    def load_full_image_stack(self, image_id, Ci=None):
-        """
-        Load a full image stack from OMERO, either all channels or one specific channel (Ci).
-        Returns: NumPy array of shape (C, Z, Y, X) or (1, Z, Y, X)
-        """
-        image = self.conn.getObject("Image", image_id)
-        pixels = image.getPrimaryPixels()
-
-        size_z = image.getSizeZ()
-        size_t = image.getSizeT()
-        size_x = image.getSizeX()
-        size_y = image.getSizeY()
-
-        if size_t > 1:
-            print(
-                f"Warning: image has multiple timepoints (T={size_t}), only T=0 will be loaded."
-            )
-
-        if Ci is not None:
-            print(f"Loading only channel {Ci}")
-            data = np.zeros((1, size_z, size_y, size_x), dtype=np.uint16)
-            for z in range(size_z):
-                plane = pixels.getPlane(z, Ci, 0)
-                data[0, z, :, :] = plane
-        else:
-            size_c = image.getSizeC()
-            print(f"Loading all {size_c} channels")
-            data = np.zeros((size_c, size_z, size_y, size_x), dtype=np.uint16)
-            for c in range(size_c):
-                for z in range(size_z):
-                    plane = pixels.getPlane(z, c, 0)
-                    data[c, z, :, :] = plane
-
-        return data
 
     def get_image_dims(self, image_id: int):
         """
@@ -199,7 +172,6 @@ class OmeroConnection:
     def load_plane_from_img_id(self, image_id, loc):
         image = self.conn.getObject("Image", image_id)
         pixels = image.getPrimaryPixels()
-        # print(pixels.getPixelsType().getValue())
 
         plane = pixels.getPlane(loc["theZ"], loc["theC"], loc["theT"])
 
@@ -207,4 +179,22 @@ class OmeroConnection:
 
 
 if __name__ == "__main__":
-    pass
+    # DEBUG
+    token = "2e74685b-dc4d-4b10-8172-9dc549b7edc1"
+    conn = OmeroConnection("omero-cci-cli.gu.se", "4064", token)
+    # ori_folder = conn.get_original_upload_folder(12178)
+    # Jens is user 102, i am user 5
+    conn.get_members_of_group()
+
+    conn.setOmeroGroupName("CCI-User-Images")
+    conn.set_user(102)
+    test = conn.conn.getObject("Image", 3050)
+    conn.get_annotations_from_imageID(3050)
+
+    # latest
+    conn.setOmeroGroupName("Metrology")
+    conn.set_user(5)
+    conn.get_annotations_from_imageID(14046)
+
+    # other in metrology
+    conn.get_annotations_from_imageID(10071)

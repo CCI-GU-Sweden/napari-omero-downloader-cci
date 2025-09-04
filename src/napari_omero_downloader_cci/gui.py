@@ -209,9 +209,20 @@ class DownloadManager:
             self.progress_signals.set_overall_max(total)
             self.progress_signals.set_overall_value(current)
 
-    def update_file_progress(self, current, total):
+    def start_overall_progress(self, total):
+        if self.progress_signals:
+            self.progress_signals.set_overall_max(total)
+
+    def advance_overall_progress(self, current):
+        if self.progress_signals:
+            self.progress_signals.set_overall_value(current)
+
+    def start_file_progress(self, total):
         if self.progress_signals:
             self.progress_signals.set_file_max(total)
+
+    def advance_file_progress(self, current):
+        if self.progress_signals:
             self.progress_signals.set_file_value(current)
 
     def _collect_fileset_ids(self):
@@ -254,9 +265,8 @@ class DownloadManager:
             self.base_path.mkdir(parents=True, exist_ok=True)
 
         all_fileset_ids = self._collect_fileset_ids()
-        self.total_files = len(all_fileset_ids)
         self.files_downloaded = 0
-        self.update_overall_progress(self.files_downloaded, self.total_files)
+        self.start_overall_progress(len(all_fileset_ids))
 
         for i in range(self.download_tree.topLevelItemCount()):
             project_item = self.download_tree.topLevelItem(i)
@@ -316,22 +326,28 @@ class DownloadManager:
             file_name = orig_file.getName()
             file_path = current_path / file_name
             file_size = orig_file.getSize()
-            self.update_file_progress(0, file_size)
+            self.start_file_progress(file_size)
 
             with open(file_path, "wb") as f:
                 bytes_written = 0
                 for chunk in orig_file.getFileInChunks():
                     f.write(chunk)
                     bytes_written += len(chunk)
-                    self.update_file_progress(bytes_written, file_size)
+                    self.advance_file_progress(bytes_written)
                     yield
 
             self.downloaded_filesets.add(fileset_id)
             self.files_downloaded += 1
-            self.update_overall_progress(
-                self.files_downloaded, self.total_files
-            )
+            self.advance_overall_progress(self.files_downloaded)
             yield
+
+
+def _fmt_bytes(n: int) -> str:
+    # human readable sizes
+    for unit in ("B", "KB", "MB", "GB", "TB", "PB"):
+        if n < 1024 or unit == "PB":
+            return f"{n:.1f} {unit}" if unit != "B" else f"{n} {unit}"
+        n /= 1024.0
 
 
 class DownloadProgressDialog(QDialog):
@@ -354,6 +370,12 @@ class DownloadProgressDialog(QDialog):
         layout.addWidget(self.file_progress)
         self.setLayout(layout)
 
+        self.file_progress.setRange(
+            0, 1000
+        )  # fixed internal range (0.1% steps)
+        self._file_total_bytes = 0
+        self._last_scaled_value = -1  # for throttling
+
     def set_overall_max(self, max_files):
         self.overall_progress.setMaximum(max_files)
 
@@ -361,7 +383,29 @@ class DownloadProgressDialog(QDialog):
         self.overall_progress.setValue(value)
 
     def set_file_max(self, max_bytes):
-        self.file_progress.setMaximum(max_bytes)
+        # store real total and reset bar
+        self._file_total_bytes = max(0, int(max_bytes or 0))
+        self._last_scaled_value = -1
+        self.file_progress.setValue(0)
+        # Do NOT use %p% — compute the percentage ourselves
+        self.file_progress.setFormat(
+            f"Current File: 0 / {_fmt_bytes(self._file_total_bytes)} (0.0%)"
+        )
 
-    def set_file_value(self, value):
-        self.file_progress.setValue(value)
+    def set_file_value(self, value: int):
+        cur = max(0, int(value or 0))
+        total = max(self._file_total_bytes, 1)  # avoid div by zero
+        frac = min(cur / total, 1.0)
+        scaled = int(round(frac * 1000))  # 0..1000
+
+        # Throttle UI updates (only update if bar moved by ≥1 "tick")
+        if scaled != self._last_scaled_value:
+            # reduce repaints if both label & value update
+            self.file_progress.setUpdatesEnabled(False)
+            self.file_progress.setValue(scaled)
+            pct = 100.0 * frac
+            self.file_progress.setFormat(
+                f"Current File: {_fmt_bytes(cur)} / {_fmt_bytes(self._file_total_bytes)} ({pct:.1f}%)"
+            )
+            self.file_progress.setUpdatesEnabled(True)
+            self._last_scaled_value = scaled
