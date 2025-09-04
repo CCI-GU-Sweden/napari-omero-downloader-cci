@@ -31,7 +31,7 @@ jobs:
         python-version: ["3.9"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -53,7 +53,7 @@ jobs:
       # and
       # tox-conda: https://github.com/tox-dev/tox-conda
       - name: Install Miniforge
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
             miniforge-version: latest
             channels: conda-forge
@@ -71,7 +71,7 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
 
       - name: Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
 
   deploy:
     # this will run when you have tagged a commit, starting with "v*"
@@ -83,7 +83,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
