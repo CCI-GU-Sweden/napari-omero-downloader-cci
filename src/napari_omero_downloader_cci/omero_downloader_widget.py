@@ -58,7 +58,6 @@ class OmeroDownloaderWidget(QWidget):
 
         # Status icon
         self.status_icon = QLabel()
-        self.update_status_icon()
 
         # === Main layout ===
         main_layout = QVBoxLayout(self)
@@ -161,6 +160,8 @@ class OmeroDownloaderWidget(QWidget):
             )
         )
         # self.omero_tree.itemDoubleClicked.connect(self.on_tree_item_open)
+
+        self.update_status_icon()
 
     # === Connection handling ===
     def toggle_connection(self):
