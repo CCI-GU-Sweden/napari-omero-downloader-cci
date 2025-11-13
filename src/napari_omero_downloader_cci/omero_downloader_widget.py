@@ -259,7 +259,7 @@ class OmeroDownloaderWidget(QWidget):
             self.status_icon.setToolTip("Disconnected")
             self.login_btn.setText("Connect")
 
-    # === Populate tree ===
+    # Populate tree
     def populate_full_tree(self):
         self.set_loading(True)
         self.tree_loader = self.populate_full_tree_generator()
@@ -285,7 +285,7 @@ class OmeroDownloaderWidget(QWidget):
                     self._add_tree_item(ds_item, "image", img_id, img_name)
                     yield
 
-        # TODO. orphaned image
+        # TODO - orphaned image
         # TODO - screen assay?
 
     def _add_tree_item(self, parent, node_type, node_id, text):
@@ -305,7 +305,7 @@ class OmeroDownloaderWidget(QWidget):
         self.busy = is_loading
         self.update_status_icon()
 
-    # === File browser ===
+    # File browser
     def browse_download_path(self):
         directory = QFileDialog.getExistingDirectory(
             self, "Select Download Directory"
@@ -316,7 +316,7 @@ class OmeroDownloaderWidget(QWidget):
     def get_download_path(self):
         return self.path_edit.text()
 
-    # === Download ===
+    # Download
     def download_files(self):
         download_path = self.get_download_path()
         if not download_path:
@@ -348,7 +348,7 @@ class OmeroDownloaderWidget(QWidget):
             self.busy = False
             self.update_status_icon()
 
-    # === Tree highlighting ===
+    # Tree highlighting
     def update_omero_tree_highlight(self):
         # 1) gather all ids currently present in download_tree
         present = self._collect_download_ids()
@@ -484,7 +484,7 @@ class OmeroDownloaderWidget(QWidget):
             self._on_experimentor_changed(self.user_combo.currentIndex())
             self.update_omero_tree_highlight()
 
-    # === Show image in Napari ===
+    # Show image in Napari
     def on_tree_item_open(self, item, column):  # double click code
         node_type, node_id = item.data(0, 1)
         if node_type == "image":

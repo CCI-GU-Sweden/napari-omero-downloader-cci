@@ -336,6 +336,10 @@ class DownloadManager:
                     self.advance_file_progress(bytes_written)
                     yield
 
+            # download the files attached to the image as well. No progress bar here!
+            for image_obj in self.conn.get_imageids_from_fileset(fileset):
+                self.conn.download_attachment(image_obj, current_path)
+
             self.downloaded_filesets.add(fileset_id)
             self.files_downloaded += 1
             self.advance_overall_progress(self.files_downloaded)

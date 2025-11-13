@@ -5,6 +5,8 @@ Created on Thu May 15 15:29:18 2025
 
 """
 
+import shutil
+
 import omero
 
 
@@ -112,6 +114,28 @@ class OmeroConnection:
         # get the image object
         image = self.conn.getObject("Image", image_id)
         return image.getFileset()
+
+    def get_imageids_from_fileset(fileset):
+        # Generator to get the images link to a fileset. Input should be a fileset object
+        for attr in ("images", "listImages", "copyImages"):
+            if hasattr(fileset, attr):
+                obj = getattr(fileset, attr)
+                try:
+                    it = obj() if callable(obj) else obj
+                    yield from it
+                    return
+                except (AttributeError, TypeError, RuntimeError):
+                    pass
+
+    def download_attachment(image_obj, out_dir):
+        # download all the FILE annotation (attachement) of an image object to the output directory
+        for ann in image_obj.listAnnotations():
+            if isinstance(ann, omero.gateway.FileAnnotationWrapper):
+                fname = ann.getFileName()
+                outputfile = ann.getFile()
+                dest = out_dir + "\\" + fname
+                with open(dest, "wb") as fout, outputfile.asFileObj() as fin:
+                    shutil.copyfileobj(fin, fout, length=1024 * 1024)
 
     def get_members_of_group(self):
         colleagues = {}
