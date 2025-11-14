@@ -137,6 +137,26 @@ class OmeroConnection:
                 with open(dest, "wb") as fout, outputfile.asFileObj() as fin:
                     shutil.copyfileobj(fin, fout, length=1024 * 1024)
 
+    def get_all_mapAnnotations(self, fileset):
+        kv_pair = {}
+        for image_obj in self.get_imageids_from_fileset(fileset):
+            for ann in image_obj.listAnnotations():
+                if isinstance(ann, omero.gateway.MapAnnotationWrapper):
+                    kv_pair.update(dict(ann.getValue()))
+        return kv_pair
+
+    def write_annotations_to_csv(self, meta_dict, filepath):
+        def escape(v):
+            v = str(v)
+            if "," in v or '"' in v:
+                v = '"' + v.replace('"', '""') + '"'
+            return v
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write("Key,Value\n")
+            for key, value in meta_dict.items():
+                f.write(f"{escape(key)},{escape(value)}\n")
+
     def get_members_of_group(self):
         colleagues = {}
         for idx in self.conn.listColleagues():

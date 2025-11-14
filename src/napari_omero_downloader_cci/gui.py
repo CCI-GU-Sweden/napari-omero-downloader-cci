@@ -340,6 +340,11 @@ class DownloadManager:
             for image_obj in self.conn.get_imageids_from_fileset(fileset):
                 self.conn.download_attachment(image_obj, current_path)
 
+            # download the key-value pair to the image as well as csv. Still no progress bar :)
+            anns = self.conn.get_all_mapAnnotations(fileset)
+            csv_name = file_name.split(".")[0] + "anns.csv"
+            self.conn.write_annotations_to_csv(anns, current_path / csv_name)
+
             self.downloaded_filesets.add(fileset_id)
             self.files_downloaded += 1
             self.advance_overall_progress(self.files_downloaded)
