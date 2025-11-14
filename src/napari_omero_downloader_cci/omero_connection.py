@@ -5,8 +5,6 @@ Created on Thu May 15 15:29:18 2025
 
 """
 
-import shutil
-
 import omero
 
 
@@ -128,6 +126,8 @@ class OmeroConnection:
                     pass
 
     def download_attachment(self, image_obj, out_dir):
+        import shutil
+
         # download all the FILE annotation (attachement) of an image object to the output directory
         for ann in image_obj.listAnnotations():
             if isinstance(ann, omero.gateway.FileAnnotationWrapper):

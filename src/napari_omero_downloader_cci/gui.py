@@ -197,10 +197,11 @@ class DownloadQueueTree(QTreeWidget):
 
 
 class DownloadManager:
-    def __init__(self, download_tree, conn, base_path):
+    def __init__(self, download_tree, conn, base_path, settings):
         self.download_tree = download_tree
         self.conn = conn
         self.base_path = Path(base_path)
+        self.settings = settings
         self.downloaded_filesets = set()  # Track downloaded fileset IDs
         self.progress_signals = None
 
@@ -337,13 +338,17 @@ class DownloadManager:
                     yield
 
             # download the files attached to the image as well. No progress bar here!
-            for image_obj in self.conn.get_imageids_from_fileset(fileset):
-                self.conn.download_attachment(image_obj, current_path)
+            if self.settings.get("download_attachement", False):
+                for image_obj in self.conn.get_imageids_from_fileset(fileset):
+                    self.conn.download_attachment(image_obj, current_path)
 
             # download the key-value pair to the image as well as csv. Still no progress bar :)
-            anns = self.conn.get_all_mapAnnotations(fileset)
-            csv_name = file_name.split(".")[0] + "anns.csv"
-            self.conn.write_annotations_to_csv(anns, current_path / csv_name)
+            if self.settings.get("export_metadata", False):
+                anns = self.conn.get_all_mapAnnotations(fileset)
+                csv_name = file_name.split(".")[0] + "anns.csv"
+                self.conn.write_annotations_to_csv(
+                    anns, current_path / csv_name
+                )
 
             self.downloaded_filesets.add(fileset_id)
             self.files_downloaded += 1
