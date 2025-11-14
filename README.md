@@ -29,7 +29,7 @@ conda activate napari
 napari
 ```
 
-Or you can download from [github](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/scripts) the install_napari_omero (bat for window, sh for Mac/Linux). This will also install the plugin!
+Or you can download from [my github repo](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/tree/main/scripts) the install_napari_omero (bat for window, sh for Mac/Linux). This will also install the plugin!
 
 ### Already python and napari installed
 
@@ -43,7 +43,7 @@ conda install -c conda-forge omero-py --yes
 
 You can install the plugin through the napari plugin manager: Plugins -> Install/Uninstall Plugins.. -> search for 'omero'.
 
-![napari plugin](assets/napari_omero.png)
+![napari plugin](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/napari_omero.png)
 
 The plugin is named Omero Downloader CCI.
 
@@ -67,7 +67,7 @@ pip install -e .
 
 ## Running the plugin after Installation
 
-The easy step: download from [github](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/scripts) the start_napari (bat for window, sh for Mac/Linux) and run it. It should open python, activate the env then run napari (can take 10-30 seconds the first time!)
+The easy step: download from [my github repo](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/tree/main/scripts) the start_napari (bat for window, sh for Mac/Linux) and run it. It should open python, activate the env then run napari (can take 10-30 seconds the first time!)
 
 Otherwise, open the conda-forge CLI, then:
 
@@ -78,7 +78,7 @@ napari
 
 The plug will be in the plugin tab.
 
-![plugin](assets/plugin.png)
+![plugin](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/plugin.png)
 
 ## Plugin
 
@@ -97,13 +97,13 @@ However, they do not fullfill the prerequiste at the CCI: A simple tool to quick
 
 In 'Options...', indicate the omero server address and port. The default is the one for the CCI at the University of Gothenburg.
 
-![options](assets/options.png)
+![options](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/options.png)
 
 Click on the link, login on Omero and grab a key. This key is valid only for a certain amount of time and for this session. Generating a new key, or closing your session (via the 'Disconnect') will invalidate the key.
 
 Enter the key in the field and click on 'Connect'.
 
-![login](assets/login.png)
+![login](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/login.png)
 
 The square next to the connect button is indicating the connection status:
 
@@ -130,13 +130,13 @@ There is a color on the 'OMERO Data' as well:
 
 You can remove an element by double clicking on it in the 'Download queue'.
 
-![trees](assets/tree.png)
+![trees](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/tree.png)
 
 ### Data Visualization
 
 It is possible to visualize the selected data (in the 'OMERO Data' tree) by clicking on the 'Visualize' button. This will download and display only one plane (first time point, middle of stack in case of multi-dimensional image). It is possible to scroll the data, but keep in mind that this is streamed from the Omero server. Do not expect high performance specially if the image is large!
 
-![visualize](assets/visualize.png)
+![visualize](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/visualize.png)
 
 ### Data Downloading
 
@@ -146,9 +146,9 @@ The data will be organized in a similar way that they are on the Omero server. I
 
 In option, if download attachement and key-value pair is enable, these files will also be downloaded alongside the image.
 
-![progressbar](assets/progressbar.png)
+![progressbar](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/progressbar.png)
 
-![folder](assets/folder.png)
+![folder](https://raw.githubusercontent.com/CCI-GU-Sweden/napari-omero-downloader-cci/main/assets/folder.png)
 
 ### Data deletion
 
