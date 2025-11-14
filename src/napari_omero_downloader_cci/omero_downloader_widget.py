@@ -13,7 +13,9 @@ from dask import delayed
 from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QBrush, QColor, QPixmap
 from qtpy.QtWidgets import (
+    QCheckBox,
     QComboBox,
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -65,11 +67,11 @@ class OmeroDownloaderWidget(QWidget):
         # --- Login row ---
         login_layout = QHBoxLayout()
 
-        link_label = QLabel(
+        self.link_label = QLabel(
             f'<a href="{OMERO_TOKEN_URL}">Get your key from OMERO</a>'
         )
-        link_label.setOpenExternalLinks(True)
-        login_layout.addWidget(link_label)
+        self.link_label.setOpenExternalLinks(True)
+        login_layout.addWidget(self.link_label)
 
         login_layout.addWidget(QLabel("Key:"))
         self.key_edit = QLineEdit()
@@ -81,6 +83,10 @@ class OmeroDownloaderWidget(QWidget):
         login_layout.addWidget(self.login_btn)
 
         login_layout.addWidget(self.status_icon)
+
+        self.options_btn = QPushButton("Options…")
+        self.options_btn.clicked.connect(self.show_options_dialog)
+        login_layout.addWidget(self.options_btn)
 
         main_layout.addLayout(login_layout)
 
@@ -163,6 +169,27 @@ class OmeroDownloaderWidget(QWidget):
 
         self.update_status_icon()
 
+        self.settings = {
+            "export_metadata": True,
+            "download_attachement": True,
+            "DEFAULT_HOST": DEFAULT_HOST,
+            "DEFAULT_PORT": DEFAULT_PORT,
+        }
+
+    def show_options_dialog(self):
+        dlg = OptionsDialog(self, settings=self.settings)
+        if dlg.exec_():  # user clicked OK
+            new_settings = dlg.get_settings()
+            self.settings.update(new_settings)
+
+            # rerender the link to get the session token
+            host = self.settings.get("server", DEFAULT_HOST)
+            url = f"https://{host}/oauth/sessiontoken"
+            self.link_label.setText(
+                f'<a href="{url}">Get your key from OMERO</a>'
+            )
+            self.link_label.setOpenExternalLinks(True)
+
     # === Connection handling ===
     def toggle_connection(self):
         if not self.connected:
@@ -185,7 +212,9 @@ class OmeroDownloaderWidget(QWidget):
 
         try:
             self.conn = omero_connection.OmeroConnection(
-                DEFAULT_HOST, DEFAULT_PORT, key
+                self.settings.get("DEFAULT_HOST", DEFAULT_HOST),
+                self.settings.get("DEFAULT_PORT", DEFAULT_PORT),
+                key,
             )
             self.download_tree.conn = self.conn
             self.connected = True
@@ -259,7 +288,7 @@ class OmeroDownloaderWidget(QWidget):
             self.status_icon.setToolTip("Disconnected")
             self.login_btn.setText("Connect")
 
-    # === Populate tree ===
+    # Populate tree
     def populate_full_tree(self):
         self.set_loading(True)
         self.tree_loader = self.populate_full_tree_generator()
@@ -285,7 +314,7 @@ class OmeroDownloaderWidget(QWidget):
                     self._add_tree_item(ds_item, "image", img_id, img_name)
                     yield
 
-        # TODO. orphaned image
+        # TODO - orphaned image
         # TODO - screen assay?
 
     def _add_tree_item(self, parent, node_type, node_id, text):
@@ -305,7 +334,7 @@ class OmeroDownloaderWidget(QWidget):
         self.busy = is_loading
         self.update_status_icon()
 
-    # === File browser ===
+    # File browser
     def browse_download_path(self):
         directory = QFileDialog.getExistingDirectory(
             self, "Select Download Directory"
@@ -316,7 +345,7 @@ class OmeroDownloaderWidget(QWidget):
     def get_download_path(self):
         return self.path_edit.text()
 
-    # === Download ===
+    # Download
     def download_files(self):
         download_path = self.get_download_path()
         if not download_path:
@@ -328,7 +357,9 @@ class OmeroDownloaderWidget(QWidget):
         self.progress_dialog = DownloadProgressDialog(self)
         self.progress_dialog.show()
 
-        self.dm = DownloadManager(self.download_tree, self.conn, download_path)
+        self.dm = DownloadManager(
+            self.download_tree, self.conn, download_path, self.settings
+        )
         self.dm.progress_signals = self.progress_dialog
 
         self.generator = self.dm.download_files_generator()
@@ -348,7 +379,7 @@ class OmeroDownloaderWidget(QWidget):
             self.busy = False
             self.update_status_icon()
 
-    # === Tree highlighting ===
+    # Tree highlighting
     def update_omero_tree_highlight(self):
         # 1) gather all ids currently present in download_tree
         present = self._collect_download_ids()
@@ -484,7 +515,7 @@ class OmeroDownloaderWidget(QWidget):
             self._on_experimentor_changed(self.user_combo.currentIndex())
             self.update_omero_tree_highlight()
 
-    # === Show image in Napari ===
+    # Show image in Napari
     def on_tree_item_open(self, item, column):  # double click code
         node_type, node_id = item.data(0, 1)
         if node_type == "image":
@@ -579,6 +610,67 @@ class _Tri:
     NONE = 0
     PARTIAL = 1
     FULL = 2
+
+
+class OptionsDialog(QDialog):
+    def __init__(self, parent=None, settings=None):
+        super().__init__(parent)
+        self.setWindowTitle("OMERO Downloader Options")
+
+        self._settings = settings or {}
+
+        layout = QVBoxLayout(self)
+
+        # Options:
+        self.omero_host = QLineEdit(
+            self._settings.get(
+                "Omero host", self._settings.get("DEFAULT_HOST", DEFAULT_HOST)
+            )
+        )
+        layout.addWidget(QLabel("Default omero host:"))
+        layout.addWidget(self.omero_host)
+
+        self.omero_port = QLineEdit(
+            self._settings.get(
+                "Omero port", self._settings.get("DEFAULT_PORT", DEFAULT_PORT)
+            )
+        )
+        layout.addWidget(QLabel("Default omero port:"))
+        layout.addWidget(self.omero_port)
+
+        self.export_attachement_cb = QCheckBox(
+            "Download attachement(s) next to images"
+        )
+        self.export_attachement_cb.setChecked(
+            self._settings.get("download_attachement", True)
+        )
+        layout.addWidget(self.export_attachement_cb)
+
+        self.export_metadata_cb = QCheckBox(
+            "Export key-value pairs as CSV next to images"
+        )
+        self.export_metadata_cb.setChecked(
+            self._settings.get("export_metadata", True)
+        )
+        layout.addWidget(self.export_metadata_cb)
+
+        # Buttons
+        btn_row = QHBoxLayout()
+        ok_btn = QPushButton("OK")
+        cancel_btn = QPushButton("Cancel")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn.clicked.connect(self.reject)
+        btn_row.addWidget(ok_btn)
+        btn_row.addWidget(cancel_btn)
+        layout.addLayout(btn_row)
+
+    def get_settings(self):
+        return {
+            "export_metadata": self.export_metadata_cb.isChecked(),
+            "download_attachement": self.export_attachement_cb.isChecked(),
+            "DEFAULT_HOST": self.omero_host.text().strip(),
+            "DEFAULT_PORT": self.omero_port.text().strip(),
+        }
 
 
 # === Register in Napari ===

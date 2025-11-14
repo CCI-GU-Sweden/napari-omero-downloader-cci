@@ -113,6 +113,50 @@ class OmeroConnection:
         image = self.conn.getObject("Image", image_id)
         return image.getFileset()
 
+    def get_imageids_from_fileset(self, fileset):
+        # Generator to get the images link to a fileset. Input should be a fileset object
+        for attr in ("images", "listImages", "copyImages"):
+            if hasattr(fileset, attr):
+                obj = getattr(fileset, attr)
+                try:
+                    it = obj() if callable(obj) else obj
+                    yield from it
+                    return
+                except (AttributeError, TypeError, RuntimeError):
+                    pass
+
+    def download_attachment(self, image_obj, out_dir):
+        import shutil
+
+        # download all the FILE annotation (attachement) of an image object to the output directory
+        for ann in image_obj.listAnnotations():
+            if isinstance(ann, omero.gateway.FileAnnotationWrapper):
+                fname = ann.getFileName()
+                outputfile = ann.getFile()
+                dest = out_dir / fname
+                with open(dest, "wb") as fout, outputfile.asFileObj() as fin:
+                    shutil.copyfileobj(fin, fout, length=1024 * 1024)
+
+    def get_all_mapAnnotations(self, fileset):
+        kv_pair = {}
+        for image_obj in self.get_imageids_from_fileset(fileset):
+            for ann in image_obj.listAnnotations():
+                if isinstance(ann, omero.gateway.MapAnnotationWrapper):
+                    kv_pair.update(dict(ann.getValue()))
+        return kv_pair
+
+    def write_annotations_to_csv(self, meta_dict, filepath):
+        def escape(v):
+            v = str(v)
+            if "," in v or '"' in v:
+                v = '"' + v.replace('"', '""') + '"'
+            return v
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write("Key,Value\n")
+            for key, value in meta_dict.items():
+                f.write(f"{escape(key)},{escape(value)}\n")
+
     def get_members_of_group(self):
         colleagues = {}
         for idx in self.conn.listColleagues():
