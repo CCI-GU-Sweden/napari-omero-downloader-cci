@@ -6,7 +6,7 @@ echo "==========================================="
 echo
 
 echo "Creating Conda environment 'napari'..."
-conda create -n napari -c conda-forge napari omero-py pyqt -y
+conda create -n napari -c conda-forge napari pyqt -y
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to create conda environment."
     exit 1

@@ -4,18 +4,31 @@
 [![PyPI](https://img.shields.io/pypi/v/napari-omero-downloader-cci.svg?color=green)](https://pypi.org/project/napari-omero-downloader-cci)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-omero-downloader-cci.svg?color=green)](https://python.org)
 [![tests](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/workflows/tests/badge.svg)](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/actions)
-[![codecov](https://codecov.io/gh/CCI-GU-Sweden/napari-omero-downloader-cci/branch/main/graph/badge.svg)](https://codecov.io/gh/CCI-GU-Sweden/napari-omero-downloader-cci)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-omero-downloader-cci)](https://napari-hub.org/plugins/napari-omero-downloader-cci)
 [![npe2](https://img.shields.io/badge/plugin-npe2-blue?link=https://napari.org/stable/plugins/index.html)](https://napari.org/stable/plugins/index.html)
 [![Copier](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/copier-org/copier/master/img/badge/badge-grayscale-inverted-border-purple.json)](https://github.com/copier-org/copier)
 
 A plugin that allows napari to connect to the Omero CCI server to visualize and download image data.
 
-----------------------------------
+---
 
-This [napari] plugin was generated with [copier] using the [napari-plugin-template] (None).
+## Contents
+
+- [Installation](#installation)
+- [Plugin function](#plugin)
+- [Troubleshooting](#troubleshooting)
+
+---
 
 ## Installation
+
+## Standalone napari
+
+A standalone version of napari is available at [napari.org](https://napari.org/dev/tutorials/fundamentals/installation_bundle_conda.html), and the plugin is available on the [napari hub](https://napari-hub.org/plugins/napari-omero-downloader-cci.html). Just follow the installation instruction from napari, then you can install the plugin from the [plugin manager](#plugin-installation).
+
+Only work from version v0.3.7 and upward.
+
+## Via Conda Forge
 
 ### First napari installation
 
@@ -24,20 +37,16 @@ First install miniconda from conda forge: [https://conda-forge.org/download/]. T
 Recommanded, create an environment for napari, bundling both napari and omero.
 
 ```shell
-conda create -n napari -c conda-forge napari omero-py pyqt --yes
+conda create -n napari -c conda-forge napari pyqt --yes
 conda activate napari
 napari
 ```
 
 Or you can download from [my github repo](https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/tree/main/scripts) the install_napari_omero (bat for window, sh for Mac/Linux). This will also install the plugin!
 
-### Already python and napari installed
-
-In this case, activate your environment and install Omero:
-
-```shell
-conda install -c conda-forge omero-py --yes
-```
+**Note:** conda-forge does *not* provide OMERO-py or ICE bindings for Python ≥3.10.
+When installing the plugin via pip, the plugin will install its own OMERO + Ice wheels.
+This is normal and expected.
 
 ### Plugin installation
 
@@ -53,6 +62,15 @@ Or you can install `napari-omero-downloader-cci` via [pip]:
 pip install napari-omero-downloader-cci
 ```
 
+This will automatically install:
+
+- the correct **zeroc-ice** wheel for your OS and Python version
+- **omero-py 5.21.2**
+- Qt (via napari)
+- all plugin dependencies
+
+No conda required.
+
 To install latest development version :
 
 ```shell
@@ -64,6 +82,30 @@ pip install git+https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci.git
 ```shell
 pip install -e .
 ```
+
+For power user, the option to install the plugin **without** the dependencies:
+
+```shell
+pip install --no-deps napari-omero-downloader-cci
+```
+
+Dependency list:
+
+- [dask](https://pypi.org/project/dask/) - to display images
+- [numpy](https://pypi.org/project/numpy/) - to display images
+- [qtpy](https://pypi.org/project/QtPy/) – abstraction layer for Qt (used by napari).
+  A Qt backend (PyQt / PySide) is installed automatically with napari.
+- [zeroc-ice wheel based on your system](https://github.com/glencoesoftware) for the connection handling
+- [omero-py](https://pypi.org/project/omero-py/) version 5.21.2
+
+Napari is also required, but not in the dependency.
+
+Python version support locked by zeroc-ice: from 3.8 to 3.12.
+
+### Python version support
+
+This plugin supports **Python 3.8 – 3.12**, matching the available zeroc-ice wheels by Glencoe Software.
+Newer Python versions will be supported once Glencoe publishes corresponding wheels.
 
 ## Running the plugin after Installation
 
@@ -154,11 +196,38 @@ In option, if download attachement and key-value pair is enable, these files wil
 
 This napari plugin is **NOT** allowed to delete data on the Omero server. If you need to delete data, you should do it via Omero.web.
 
-## Warning about standalone napari
+## Troubleshooting
 
-A standalone version of napari is available, and the plugin will be available on the napari hub. However, installation through the standalone app is not recommanded, since it relies on pip which does not distribute system ready dependancy for Ice.
+### ❌ "No Qt bindings found"
 
-You are welcome to write a protocol/procedure on how to install omero and ice with pip.
+Install napari with Qt:
+
+```bash
+pip install "napari[qt]"
+```
+
+### ❌ "Cannot import Ice"
+
+This means the correct zeroc-ice wheel was not installed.
+Check your Python version (3.8–3.12) and OS match the supported versions. Search for the correct wheel on [Glencoe](https://github.com/glencoesoftware), then you can install them with (for example):
+
+```bash
+pip install @ "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp38-cp38-win_amd64.whl"
+```
+
+### ❌ "Cannot import omero"
+
+Ensure the plugin was installed normally:
+
+```bash
+pip install napari-omero-downloader-cci
+```
+
+If needed, force the reinstall of omero for the correct version:
+
+```bash
+pip install --upgrade "omero-py == 5.21.2"
+```
 
 ## Contributing
 
@@ -174,10 +243,7 @@ Distributed under the terms of the [MIT] license,
 
 If you encounter any problems, please [file an issue] along with a detailed description.
 
-[napari]: https://github.com/napari/napari
-[copier]: https://copier.readthedocs.io/en/stable/
 [MIT]: http://opensource.org/licenses/MIT
-[napari-plugin-template]: https://github.com/napari/napari-plugin-template
 [file an issue]: https://github.com/CCI-GU-Sweden/napari-omero-downloader-cci/issues
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/

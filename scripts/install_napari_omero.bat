@@ -6,7 +6,7 @@ echo.
 
 REM Create environment
 echo Creating conda environment "napari"...
-conda create -n napari -c conda-forge napari omero-py pyqt --yes
+conda create -n napari -c conda-forge napari pyqt --yes
 IF ERRORLEVEL 1 (
     echo ERROR: Failed to create conda environment.
     pause
