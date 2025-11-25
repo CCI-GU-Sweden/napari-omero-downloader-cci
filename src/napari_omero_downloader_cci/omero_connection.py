@@ -5,7 +5,19 @@ Created on Thu May 15 15:29:18 2025
 
 """
 
-import omero
+from napari.utils.notifications import show_error
+
+try:
+    import omero
+except ImportError:
+    show_error(
+        "OMERO support is not installed.\n\n"
+        "Please reinstall the plugin using:\n"
+        "    pip install napari-omero-downloader-cci\n\n"
+        "Advanced users: use --no-deps only if you install omero-py + zeroc-ice manually."
+    )
+    # Optionally disable OMERO features:
+    omero = None
 
 
 class OmeroConnection:

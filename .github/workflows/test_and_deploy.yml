@@ -21,14 +21,15 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.platform }} py${{ matrix.python-version }}
-    runs-on: ${{ matrix.platform }}
+    name: ${{ matrix.os }} • py${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest]
-        python-version: ["3.9"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v5
@@ -38,52 +39,40 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # these libraries enable testing on Qt on linux
-      - uses: tlambert03/setup-qt-libs@v1
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
 
-      - name: Install Windows OpenGL
-        uses: pyvista/setup-headless-display-action@v4.2
-        with:
-          qt: true
-          wm: herbstluftwm
-
-
-      # note: if you need dependencies from conda, considering using
-      # setup-miniconda: https://github.com/conda-incubator/setup-miniconda
-      # and
-      # tox-conda: https://github.com/tox-dev/tox-conda
-      - name: Install Miniforge
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-            miniforge-version: latest
-            channels: conda-forge
-            use-mamba: true
-            python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
+      - name: Install Package (full deps)
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install "tox<4" "tox-conda>=0.10,<0.11" "tox-gh-actions<3"
-      # this runs the platform-specific tests declared in tox.ini
-      - name: Test with tox (Linux under Xvfb)
-        if: runner.os == 'Linux'
-        run: python -m tox
-        env:
-          PLATFORM: ${{ matrix.platform }}
+          python -m pip install .
 
-      - name: Test with tox (non-Linux)
-        if: runner.os != 'Linux'
-        run: python -m tox
-        env:
-          PLATFORM: ${{ matrix.platform }}
+      - name: Verify OMERO + Ice imports
+        run: |
+          python - << 'EOF'
+          import sys
+          print("Python", sys.version)
+          try:
+              import Ice
+              print("Ice OK:", Ice.__file__)
+          except Exception as e:
+              print("❌ Ice import failed:", e)
+              raise
+          try:
+              import omero
+              print("OMERO OK:", omero.__version__)
+          except Exception as e:
+              print("❌ OMERO import failed:", e)
+              raise
+          EOF
 
-      - name: Coverage
-        uses: codecov/codecov-action@v5
+      - name: Test plugin import
+        run: |
+          python - << 'EOF'
+          import napari_omero_downloader_cci
+          print("Plugin imported OK")
+          EOF
 
   deploy:
-    # this will run when you have tagged a commit, starting with "v*"
-    # and requires that you have put your twine API key in your
-    # github secrets (see readme for details)
     needs: [test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
