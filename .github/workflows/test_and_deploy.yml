@@ -59,7 +59,8 @@ jobs:
               raise
           try:
               import omero
-              print("OMERO OK:", omero.__version__)
+              from omero_version import omero_version
+              print("OMERO OK:", omero_version)
           except Exception as e:
               print("❌ OMERO import failed:", e)
               raise
@@ -70,6 +71,7 @@ jobs:
           python - << 'EOF'
           import napari_omero_downloader_cci
           print("Plugin imported OK")
+          print("Plugin version:", napari_omero_downloader_cci.__version__)
           EOF
 
   deploy:
