@@ -10,6 +10,7 @@ import dask.array as da
 import napari
 import numpy as np
 from dask import delayed
+from napari.utils.notifications import show_error
 from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QBrush, QColor, QPixmap
 from qtpy.QtWidgets import (
@@ -34,6 +35,15 @@ from .gui import (
     DownloadQueueTree,
     OmeroExplorerTree,
 )
+
+try:
+    import Ice
+except ImportError:
+    show_error(
+        "Ice (zeroc-ice) is not installed.\n\n"
+        "Please install the Ice wheel for your OS and Python version.\n\n"
+        "See the README section 'Installation' for the exact command."
+    )
 
 OMERO_TOKEN_URL = "https://omero-cci-users.gu.se/oauth/sessiontoken"
 DEFAULT_HOST = "omero-cci-cli.gu.se"
@@ -198,7 +208,6 @@ class OmeroDownloaderWidget(QWidget):
             self.disconnect_from_omero()
 
     def connect_to_omero(self):
-        import Ice
 
         from . import omero_connection
 
@@ -249,7 +258,6 @@ class OmeroDownloaderWidget(QWidget):
         )
 
     def check_connection(self):
-        import Ice
 
         try:
             if (
@@ -464,7 +472,6 @@ class OmeroDownloaderWidget(QWidget):
 
     def _on_group_changed(self, index):
         """Handle group selection changes"""
-        import Ice
 
         group_name = self.group_combo.itemText(index)
         try:

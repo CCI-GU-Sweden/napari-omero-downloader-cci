@@ -24,7 +24,31 @@ A plugin that allows napari to connect to the Omero CCI server to visualize and 
 
 ## Standalone napari
 
-A standalone version of napari is available at [napari.org](https://napari.org/dev/tutorials/fundamentals/installation_bundle_conda.html), and the plugin is available on the [napari hub](https://napari-hub.org/plugins/napari-omero-downloader-cci.html). Just follow the installation instruction from napari, then you can install the plugin from the [plugin manager](#plugin-installation).
+A standalone version of napari is available at [napari.org](https://napari.org/dev/tutorials/fundamentals/installation_bundle_conda.html), and the plugin is available on the [napari hub](https://napari-hub.org/plugins/napari-omero-downloader-cci.html). Just follow the installation instruction from napari.
+
+For now, you will need to install zeroc-ice manually.
+
+**Assuming** python 3.10 (napari standalone):
+
+Window:
+
+```shell
+pip install "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp310-cp310-win_amd64.whl"
+```
+
+MacOS:
+
+```shell
+pip install "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp310-cp310-macosx_11_0_universal2.whl"
+```
+
+Linux:
+
+```shell
+pip install "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp310-cp310-manylinux_2_28_x86_64.whl"
+```
+
+then you can install the plugin from the [plugin manager](#plugin-installation).
 
 Only work from version v0.3.8 and upward.
 
@@ -209,11 +233,13 @@ pip install "napari[qt]"
 ### ❌ "Cannot import Ice"
 
 This means the correct zeroc-ice wheel was not installed.
-Check your Python version (3.8–3.12) and OS match the supported versions. Search for the correct wheel on [Glencoe](https://github.com/glencoesoftware), then you can install them with (for example):
+Check your Python version (3.8–3.12) and OS match the supported versions. Search for the correct wheel on [Glencoe](https://github.com/glencoesoftware), then you can install them with (for example, windows and python 3.10):
 
 ```bash
-pip install @ "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp38-cp38-win_amd64.whl"
+pip install @ "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp310-cp310-win_amd64.whl"
 ```
+
+Do **NOT** install directly zeroc-ice from pip: it will fail.
 
 ### ❌ "Cannot import omero"
 

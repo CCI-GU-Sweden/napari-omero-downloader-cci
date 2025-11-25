@@ -42,6 +42,28 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
 
+      - name: Install Ice (Glencoe wheels)
+        shell: bash
+        run: |
+          PY=${{ matrix.python-version }}
+          OS=${{ matrix.os }}
+          if [[ "$OS" == "ubuntu-latest" && "$PY" == "3.10" ]]; then
+            python -m pip install "https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp310-cp310-manylinux_2_28_x86_64.whl"
+          elif [[ "$OS" == "ubuntu-latest" && "$PY" == "3.11" ]]; then
+            python -m pip install "https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp311-cp311-manylinux_2_28_x86_64.whl"
+          elif [[ "$OS" == "macos-latest" && "$PY" == "3.10" ]]; then
+            python -m pip install "https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp310-cp310-macosx_11_0_universal2.whl"
+          elif [[ "$OS" == "macos-latest" && "$PY" == "3.11" ]]; then
+            python -m pip install "https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp311-cp311-macosx_11_0_universal2.whl"
+          elif [[ "$OS" == "windows-latest" && "$PY" == "3.10" ]]; then
+            python -m pip install "https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp310-cp310-win_amd64.whl"
+          elif [[ "$OS" == "windows-latest" && "$PY" == "3.11" ]]; then
+            python -m pip install "https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp311-cp311-win_amd64.whl"
+          else
+            echo "No Glencoe wheel rule for this combo; trying PyPI zeroc-ice (may fail)..."
+            python -m pip install "zeroc-ice==3.6.5" || true
+          fi
+
       - name: Install napari with Qt backend (for plugin import)
         run: python -m pip install "napari[qt]"
 
