@@ -42,8 +42,8 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
 
-      - name: Install napari (for plugin import)
-        run: python -m pip install "napari"
+      - name: Install napari with Qt backend (for plugin import)
+        run: python -m pip install "napari[qt]"
 
       - name: Install Package (full deps)
         run: |
