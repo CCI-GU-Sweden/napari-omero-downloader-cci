@@ -26,7 +26,7 @@ A plugin that allows napari to connect to the Omero CCI server to visualize and 
 
 A standalone version of napari is available at [napari.org](https://napari.org/dev/tutorials/fundamentals/installation_bundle_conda.html), and the plugin is available on the [napari hub](https://napari-hub.org/plugins/napari-omero-downloader-cci.html). Just follow the installation instruction from napari, then you can install the plugin from the [plugin manager](#plugin-installation).
 
-Only work from version v0.3.7 and upward.
+Only work from version v0.3.8 and upward.
 
 ## Via Conda Forge
 
