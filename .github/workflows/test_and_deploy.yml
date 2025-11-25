@@ -42,11 +42,15 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
 
+      - name: Install napari (for plugin import)
+        run: python -m pip install "napari"
+
       - name: Install Package (full deps)
         run: |
           python -m pip install .
 
       - name: Verify OMERO + Ice imports
+        shell: bash
         run: |
           python - << 'EOF'
           import sys
@@ -67,6 +71,7 @@ jobs:
           EOF
 
       - name: Test plugin import
+        shell: bash
         run: |
           python - << 'EOF'
           import napari_omero_downloader_cci
