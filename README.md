@@ -24,31 +24,7 @@ A plugin that allows napari to connect to the Omero CCI server to visualize and 
 
 ## Standalone napari
 
-A standalone version of napari is available at [napari.org](https://napari.org/dev/tutorials/fundamentals/installation_bundle_conda.html), and the plugin is available on the [napari hub](https://napari-hub.org/plugins/napari-omero-downloader-cci.html). Just follow the installation instruction from napari.
-
-For now, you will need to install zeroc-ice manually.
-
-**Assuming** python 3.10 (napari standalone):
-
-Window:
-
-```shell
-pip install "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20240325/zeroc_ice-3.6.5-cp310-cp310-win_amd64.whl"
-```
-
-MacOS:
-
-```shell
-pip install "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-macos-universal2/releases/download/20240131/zeroc_ice-3.6.5-cp310-cp310-macosx_11_0_universal2.whl"
-```
-
-Linux:
-
-```shell
-pip install "zeroc-ice @ https://github.com/glencoesoftware/zeroc-ice-py-linux-x86_64/releases/download/20240202/zeroc_ice-3.6.5-cp310-cp310-manylinux_2_28_x86_64.whl"
-```
-
-then you can install the plugin from the [plugin manager](#plugin-installation).
+A standalone version of napari is available at [napari.org](https://napari.org/dev/tutorials/fundamentals/installation_bundle_conda.html), and the plugin is available on the [napari hub](https://napari-hub.org/plugins/napari-omero-downloader-cci.html). Just follow the installation instruction from napari. You can install the plugin from the [plugin manager](#plugin-installation).
 
 Only work from version v0.3.8 and upward.
 
@@ -88,12 +64,17 @@ pip install napari-omero-downloader-cci
 
 This will automatically install:
 
-- the correct **zeroc-ice** wheel for your OS and Python version
-- **omero-py 5.21.2**
 - Qt (via napari)
 - all plugin dependencies
 
 No conda required.
+
+When you first start the plugin, napari will prompt you to install:
+
+- the correct **zeroc-ice** wheel for your OS and Python version
+- **omero-py 5.21.2**
+
+The plugin will check and install these for you.
 
 To install latest development version :
 
@@ -124,7 +105,7 @@ Dependency list:
 
 Napari is also required, but not in the dependency.
 
-Python version support locked by zeroc-ice: from 3.8 to 3.12.
+Python version support locked by zeroc-ice: from 3.8 to 3.12. Default is python 3.10.
 
 ### Python version support
 

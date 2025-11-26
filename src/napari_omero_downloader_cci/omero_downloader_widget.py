@@ -6,6 +6,7 @@ Created on Mon Sep  1 14:54:11 2025
 
 # omero_downloader_widget.py
 
+
 import dask.array as da
 import napari
 import numpy as np
@@ -36,14 +37,35 @@ from .gui import (
     OmeroExplorerTree,
 )
 
+# check import and install them if they are not present
 try:
     import Ice
-except ImportError:
-    show_error(
-        "Ice (zeroc-ice) is not installed.\n\n"
-        "Please install the Ice wheel for your OS and Python version.\n\n"
-        "See the README section 'Installation' for the exact command."
-    )
+except ImportError:  # ice not installed.
+    from ._installer import install_ice_wheel
+
+    install_ice_wheel()
+
+    # omero is also unlikely to be install
+    try:
+        import omero  # noqa: F401
+    except ImportError:
+        from ._installer import install_omeropy
+
+        install_omeropy()
+
+    # check that they are both installed.
+    try:
+        import Ice
+        from omero_version import omero_version
+
+        print("OMERO OK:", omero_version)
+        print("Ice OK:", Ice.__file__)
+    except ImportError:
+        show_error(
+            "OMERO or Ice still not installed; OMERO features disabled."
+        )
+        Ice = None
+
 
 OMERO_TOKEN_URL = "https://omero-cci-users.gu.se/oauth/sessiontoken"
 DEFAULT_HOST = "omero-cci-cli.gu.se"
@@ -219,27 +241,28 @@ class OmeroDownloaderWidget(QWidget):
             )
             return
 
-        try:
-            self.conn = omero_connection.OmeroConnection(
-                self.settings.get("DEFAULT_HOST", DEFAULT_HOST),
-                self.settings.get("DEFAULT_PORT", DEFAULT_PORT),
-                key,
-            )
-            self.download_tree.conn = self.conn
-            self.connected = True
-            self.login_btn.setText("Disconnect")
-            self.visu_btn.setEnabled(True)
-            self.download_btn.setEnabled(True)
-            # QMessageBox.information(self, "Connected", "Successfully connected to OMERO.")
-            self.update_status_icon()
-            # self.user_name = self.conn.get_logged_in_user_name()
-            self._update_groups_and_user()
-            self.refresh()
+        if Ice:
+            try:
+                self.conn = omero_connection.OmeroConnection(
+                    self.settings.get("DEFAULT_HOST", DEFAULT_HOST),
+                    self.settings.get("DEFAULT_PORT", DEFAULT_PORT),
+                    key,
+                )
+                self.download_tree.conn = self.conn
+                self.connected = True
+                self.login_btn.setText("Disconnect")
+                self.visu_btn.setEnabled(True)
+                self.download_btn.setEnabled(True)
+                # QMessageBox.information(self, "Connected", "Successfully connected to OMERO.")
+                self.update_status_icon()
+                # self.user_name = self.conn.get_logged_in_user_name()
+                self._update_groups_and_user()
+                self.refresh()
 
-        except Ice.Exception as e:
-            QMessageBox.critical(self, "Connection Error", str(e))
-            self.connected = False
-            self.update_status_icon()
+            except Ice.Exception as e:
+                QMessageBox.critical(self, "Connection Error", str(e))
+                self.connected = False
+                self.update_status_icon()
 
     def disconnect_from_omero(self):
         if self.conn:
@@ -474,30 +497,33 @@ class OmeroDownloaderWidget(QWidget):
         """Handle group selection changes"""
 
         group_name = self.group_combo.itemText(index)
-        try:
-            self.conn.setOmeroGroupName(group_name)
-            self.load_experimentors()
+        if Ice:
+            try:
+                self.conn.setOmeroGroupName(group_name)
+                self.load_experimentors()
 
-            # Set experimentor combo to yourself
-            self.user_combo.blockSignals(True)
-            if self.user_name in self.members:
-                user_index = list(self.members.keys()).index(self.user_name)
-                self.user_combo.setCurrentIndex(user_index)
-            self.user_combo.blockSignals(False)
+                # Set experimentor combo to yourself
+                self.user_combo.blockSignals(True)
+                if self.user_name in self.members:
+                    user_index = list(self.members.keys()).index(
+                        self.user_name
+                    )
+                    self.user_combo.setCurrentIndex(user_index)
+                self.user_combo.blockSignals(False)
 
-            # Manually trigger experimentor change once
-            self._on_experimentor_changed(self.user_combo.currentIndex())
+                # Manually trigger experimentor change once
+                self._on_experimentor_changed(self.user_combo.currentIndex())
 
-            self.omero_tree.clear()
-            self.download_tree.clear()
-            self.download_tree._existing_projects = {}
-            self.populate_full_tree()
-        except (Ice.Exception, ValueError) as e:
-            self.connected = False
-            self.update_status_icon()
-            QMessageBox.critical(
-                self, "Error", f"Failed to switch groups: {str(e)}"
-            )
+                self.omero_tree.clear()
+                self.download_tree.clear()
+                self.download_tree._existing_projects = {}
+                self.populate_full_tree()
+            except (Ice.Exception, ValueError) as e:
+                self.connected = False
+                self.update_status_icon()
+                QMessageBox.critical(
+                    self, "Error", f"Failed to switch groups: {str(e)}"
+                )
 
     def load_experimentors(self):
         self.members = self.conn.get_members_of_group()
