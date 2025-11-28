@@ -226,6 +226,14 @@ class DownloadManager:
         if self.progress_signals:
             self.progress_signals.set_file_value(current)
 
+    def start_extra_progress(self, total):
+        if self.progress_signals:
+            self.progress_signals.set_extra_max(total)
+
+    def advance_extra_progress(self, current):
+        if self.progress_signals:
+            self.progress_signals.set_extra_value(current)
+
     def _collect_fileset_ids(self):
         fileset_set = set()
         for i in range(self.download_tree.topLevelItemCount()):
@@ -295,7 +303,7 @@ class DownloadManager:
 
         for i in range(dataset_item.childCount()):
             child_item = dataset_item.child(i)
-            node_type, node_id = child_item.data(0, 1)
+            node_type, _ = child_item.data(0, 1)
             if node_type == "folder":
                 folder_name = child_item.text(0)
                 folder_path = dataset_path / folder_name
@@ -312,7 +320,7 @@ class DownloadManager:
 
     def _download_image_generator(self, image_item, current_path):
         image_name = image_item.text(0)
-        node_type, image_id = image_item.data(0, 1)
+        _, image_id = image_item.data(0, 1)
 
         fileset = self.conn.get_fileset_from_imageID(image_id)
         if fileset is None:
@@ -322,6 +330,13 @@ class DownloadManager:
         fileset_id = fileset.getId()
         if fileset_id in self.downloaded_filesets:
             return
+
+        extra_tasks = 0
+        if self.settings.get("download_attachement", False):
+            extra_tasks += self.conn.get_file_attachment_count(fileset)
+        if self.settings.get("export_metadata", False):
+            # treat metadata export as 1 task per original file
+            extra_tasks += len(list(fileset.listFiles()))
 
         for orig_file in fileset.listFiles():
             file_name = orig_file.getName()
@@ -337,15 +352,62 @@ class DownloadManager:
                     self.advance_file_progress(bytes_written)
                     yield
 
-            # download the files attached to the image as well. No progress bar here!
+            # download the files attached to the image as well.
             if self.settings.get("download_attachement", False):
-                for image_obj in self.conn.get_imageids_from_fileset(fileset):
-                    self.conn.download_attachment(image_obj, current_path)
+                for idx, image_obj in enumerate(
+                    self.conn.get_imageids_from_fileset(fileset)
+                ):
+                    for ann in image_obj.listAnnotations():
+                        if isinstance(ann, self.conn.get_fileAnnotation_def()):
+                            fname = ann.getFileName()
+                            outputfile = ann.getFile()
+                            dest = current_path / fname
 
-            # download the key-value pair to the image as well as csv. Still no progress bar :)
+                            # Try to get file size for progress:
+                            try:
+                                total = ann.getFileSize()  # preferred
+                            except AttributeError:
+                                try:
+                                    total = (
+                                        outputfile.getSize()
+                                    )  # fallback if wrapper differs
+                                except AttributeError:
+                                    total = None  # we’ll go “indeterminate”
+
+                            self.start_extra_progress(total)
+
+                            # If we know size, copy in chunks and update by bytes
+                            if total is not None:
+                                with open(
+                                    dest, "wb"
+                                ) as fout, outputfile.asFileObj() as fin:
+                                    copied = 0
+                                    while True:
+                                        buf = fin.read(1024 * 1024)
+                                        if not buf:
+                                            break
+                                        fout.write(buf)
+                                        copied += len(buf)
+                                        self.advance_extra_progress(copied)
+                                        yield
+                            else:
+                                # no size: just stream with shutil (quick, no real progress info)
+                                import shutil
+
+                                with open(
+                                    dest, "wb"
+                                ) as fout, outputfile.asFileObj() as fin:
+                                    shutil.copyfileobj(
+                                        fin, fout, length=1024 * 1024
+                                    )
+                                    yield
+
+                                self.advance_extra_progress(idx + 1)
+
+            # download the key-value pair to the image as well as csv. No progress bar (csv!)
             if self.settings.get("export_metadata", False):
                 anns = self.conn.get_all_mapAnnotations(fileset)
-                csv_name = file_name.split(".")[0] + "anns.csv"
+                csv_name = file_name.split(".")[0] + "_anns.csv"
                 self.conn.write_annotations_to_csv(
                     anns, current_path / csv_name
                 )
@@ -379,9 +441,14 @@ class DownloadProgressDialog(QDialog):
         self.file_progress.setFormat("Current File Progress: %p%")
         self.file_progress.setAlignment(Qt.AlignCenter)
 
+        self.extra_progress = QProgressBar()
+        self.extra_progress.setFormat("Extra tasks: %v/%m")
+        self.extra_progress.setAlignment(Qt.AlignCenter)
+
         layout = QVBoxLayout()
         layout.addWidget(self.overall_progress)
         layout.addWidget(self.file_progress)
+        layout.addWidget(self.extra_progress)
         self.setLayout(layout)
 
         self.file_progress.setRange(
@@ -389,6 +456,9 @@ class DownloadProgressDialog(QDialog):
         )  # fixed internal range (0.1% steps)
         self._file_total_bytes = 0
         self._last_scaled_value = -1  # for throttling
+
+        self._extra_total_bytes = 0
+        self._last_extra_scaled_value = -1
 
     def set_overall_max(self, max_files):
         self.overall_progress.setMaximum(max_files)
@@ -401,7 +471,6 @@ class DownloadProgressDialog(QDialog):
         self._file_total_bytes = max(0, int(max_bytes or 0))
         self._last_scaled_value = -1
         self.file_progress.setValue(0)
-        # Do NOT use %p% — compute the percentage ourselves
         self.file_progress.setFormat(
             f"Current File: 0 / {_fmt_bytes(self._file_total_bytes)} (0.0%)"
         )
@@ -423,3 +492,30 @@ class DownloadProgressDialog(QDialog):
             )
             self.file_progress.setUpdatesEnabled(True)
             self._last_scaled_value = scaled
+
+    def set_extra_max(self, max_tasks: int):
+        self._extra_total_bytes = max_tasks
+        self._last_extra_scaled_value = -1
+        self.extra_progress.setMaximum(max_tasks)
+        self.extra_progress.setValue(0)
+        self.extra_progress.setFormat(
+            f"Extra tasks: 0 / {_fmt_bytes(self._extra_total_bytes)} (0.0%)"
+        )
+
+    def set_extra_value(self, value):
+        cur = max(0, int(value or 0))
+        total = max(self._extra_total_bytes, 1)  # avoid div by zero
+        frac = min(cur / total, 1.0)
+        scaled = int(round(frac * 1000))  # 0..1000
+
+        # Throttle UI updates (only update if bar moved by ≥1 "tick")
+        if scaled != self._last_scaled_value:
+            # reduce repaints if both label & value update
+            # self.extra_progress.setUpdatesEnabled(False)
+            self.extra_progress.setValue(scaled)
+            pct = 100.0 * frac
+            self.extra_progress.setFormat(
+                f"Extra tasks: {_fmt_bytes(cur)} / {_fmt_bytes(self._extra_total_bytes)} ({pct:.1f}%)"
+            )
+            self.extra_progress.setUpdatesEnabled(True)
+            self._last_extra_scaled_value = scaled

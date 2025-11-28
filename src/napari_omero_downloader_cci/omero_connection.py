@@ -143,17 +143,17 @@ class OmeroConnection:
                 except (AttributeError, TypeError, RuntimeError):
                     pass
 
-    def download_attachment(self, image_obj, out_dir):
-        import shutil
+    def get_file_attachment_count(self, fileset):
+        count = 0
+        for img in self.get_imageids_from_fileset(fileset):
+            # number of file annotations per image
+            for ann in img.listAnnotations():
+                if isinstance(ann, omero.gateway.FileAnnotationWrapper):
+                    count += 1
+        return count
 
-        # download all the FILE annotation (attachement) of an image object to the output directory
-        for ann in image_obj.listAnnotations():
-            if isinstance(ann, omero.gateway.FileAnnotationWrapper):
-                fname = ann.getFileName()
-                outputfile = ann.getFile()
-                dest = out_dir / fname
-                with open(dest, "wb") as fout, outputfile.asFileObj() as fin:
-                    shutil.copyfileobj(fin, fout, length=1024 * 1024)
+    def get_fileAnnotation_def(self):
+        return omero.gateway.FileAnnotationWrapper
 
     def get_all_mapAnnotations(self, fileset):
         kv_pair = {}
