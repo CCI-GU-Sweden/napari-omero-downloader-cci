@@ -134,6 +134,10 @@ The plugin requires that you have access to Omero with the following features:
 - CLI enable
 - OAuth enable (2FA token)
 
+Youtube video presentation:
+
+[![Presentation](assets/YT_caption.png)](https://youtu.be/W3qChW-JqZc)
+
 ### Why this plugin?
 
 Another solution outside of this plugin is available: omero.insight ([openmicroscopy website](https://www.openmicroscopy.org/omero/downloads/)), as well as a FiJi plugin.
